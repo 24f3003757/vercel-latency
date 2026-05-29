@@ -1,5 +1,4 @@
-# api/index.py
-from fastapi import FastAPI
+from fastapi import FastAPI, Response
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List
@@ -71,7 +70,10 @@ def compute_p95(values):
     return sorted_vals[lower] + frac * (sorted_vals[upper] - sorted_vals[lower])
 
 @app.post("/api/latency")
-def latency(body: RequestBody):
+def latency(body: RequestBody, response: Response):
+    # Tell Vercel's CDN: never cache this response
+    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate"
+    
     result = {}
     for region in body.regions:
         records = [r for r in TELEMETRY if r["region"] == region]
