@@ -1,5 +1,6 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from typing import List
 
@@ -8,10 +9,26 @@ app = FastAPI()
 # CORS middleware — allows any browser/dashboard to POST to this endpoint
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],      # accept requests from any domain
-    allow_methods=["POST"],   # only POST is needed per the spec
+    allow_origins=["*"],
+    allow_methods=["*"],      # must include OPTIONS for preflight
     allow_headers=["*"],
+    allow_credentials=False,
 )
+
+# Explicit OPTIONS handler for preflight requests.
+# When a browser sends a cross-origin POST, it first sends an OPTIONS
+# "preflight" request asking "is this allowed?" The middleware should
+# handle this, but some Vercel environments need it explicit.
+@app.options("/api/latency")
+def options_handler():
+    return JSONResponse(
+        content={},
+        headers={
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "POST, OPTIONS",
+            "Access-Control-Allow-Headers": "*",
+        }
+    )
 
 # The telemetry data is embedded directly in the code.
 # Why? Because Vercel serverless functions can't read from the filesystem
